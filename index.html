@@ -681,13 +681,27 @@ window.NOMBRES = { K: 'rey', Q: 'reina', R: 'torre', B: 'alfil', N: 'caballo', P
     if (i < 0) return;
     if (sel === null) {
       if (tab[i] === '.') { aviso('Toca una pieza y después la pieza que quieres capturar.'); return; }
-      sel = i; sonar('elegir'); dibujar(); return;
+      elegir(i); return;
     }
     if (i === sel) { sel = null; dibujar(); return; }
     if (M.capturasDe(tab, sel).includes(i)) { jugar(sel, i); return; }
     if (tab[i] === '.') { jugar(sel, i); return; }
-    // otra pieza que la elegida no puede capturar: pasa a ser la elegida (como en cualquier ajedrez de pantalla)
+    // otra pieza que la elegida no puede capturar. Si parecía una captura (está en su línea, en su «L»… o es el rey),
+    // se explica por qué no vale; antes solo se cambiaba de pieza en silencio y parecía que la elegida se había
+    // bloqueado (Fali, 11-nov, reto 5 de Principiante). En los dos casos la tocada pasa a ser la elegida.
+    if (pareceCaptura(sel, i)) { sonar('no'); aviso(porQueNo(sel, i)); sel = i; dibujar(); return; }
+    elegir(i);
+  }
+  // elegir una pieza; si no puede capturar nada, se dice al momento
+  function elegir(i) {
     sel = i; sonar('elegir'); dibujar();
+    if (!M.capturasDe(tab, i).length && M.movimientos(tab).length) aviso(`${laPieza(tab[i])[0].toUpperCase() + laPieza(tab[i]).slice(1)} de ${nombreCas(i)} no puede capturar nada ahora mismo.`);
+  }
+  // ¿la pieza de b está donde la de a «podría» capturar si no hubiera nada en medio? (o es el rey)
+  function pareceCaptura(a, b) {
+    if (tab[b] === 'K') return true;
+    const p = tab[a], df = Math.floor(b / 4) - Math.floor(a / 4), dc = b % 4 - a % 4, adf = Math.abs(df), adc = Math.abs(dc);
+    return { Q: df === 0 || dc === 0 || adf === adc, R: df === 0 || dc === 0, B: adf === adc, N: adf * adc === 2, K: adf <= 1 && adc <= 1, P: df === -1 && adc === 1 }[p];
   }
 
   // ---------- diálogos ----------
