@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mini ajedrez</title>
+<meta name="description" content="Retos de ajedrez en un tablero de 4×4: captura una pieza en cada jugada hasta que quede solo una.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#f6efe0; --papel2:#ece1c8; --tinta:#2b2620; --tinta2:#5b5146; --acento:#2f7d3a; --acento2:#25642e;
+  --blanco:#fffaf0; --rojo:#b8323a; --oro:#e0a82e; --disco:#fffaf0;
+  --clara:#f3e2bd; --oscura:#c99d6b; --marco:#8a6440;
+  --fuente-titulo:'Cinzel Decorative',Cinzel,Georgia,serif; --fuente-nombre:Cinzel,Georgia,serif;
+  --fuente-texto:Alegreya,Georgia,'Times New Roman',serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--papel);color:var(--tinta);font-family:var(--fuente-texto);font-size:17px;line-height:1.35;-webkit-tap-highlight-color:transparent;font-variant-ligatures:none}
+button{font-family:inherit;color:inherit;font-variant-ligatures:inherit}
+[hidden]{display:none!important}
+/* ---- portada ---- */
+.portada{max-width:1080px;margin:0 auto;padding:18px 16px 28px}
+.portada .marca{text-align:center}
+.portada .corona{width:74px;height:74px;margin:0 auto -4px;color:var(--tinta)}
+.portada .corona svg{width:100%;height:100%}
+.portada h1{font-family:var(--fuente-titulo);font-weight:700;font-size:clamp(40px,9vw,68px);margin:0;line-height:1.05}
+.portada .lema{font-style:italic;color:var(--tinta2);margin:6px auto 0;max-width:600px;text-wrap:balance;font-size:19px}
+.nivel-bloque{margin-top:26px}
+.nivel-bloque h2{font-family:var(--fuente-nombre);font-size:26px;margin:0;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.nivel-bloque h2 .cuenta{font-family:var(--fuente-texto);font-size:16px;font-weight:700;color:#fff;border-radius:20px;padding:2px 11px}
+.nivel-bloque .sub{text-align:center;color:var(--tinta2);margin:2px 0 0;font-size:15.5px}
+.retos{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:12px}
+@media (max-width:760px){.retos{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:440px){.retos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.reto{border:2px solid var(--tinta);border-radius:14px;background:var(--blanco);padding:8px 8px 9px;cursor:pointer;display:flex;flex-direction:column;gap:5px;text-align:left;min-width:0;position:relative}
+.reto:hover{transform:translateY(-2px)}
+.reto:focus-visible{outline:3px solid var(--oro);outline-offset:2px}
+.reto .mini{width:100%;aspect-ratio:1;display:block}
+.reto .fila{display:flex;justify-content:space-between;align-items:center;gap:4px}
+.reto .tit{font-family:var(--fuente-nombre);font-size:17px;font-weight:700}
+.reto .np{font-size:13.5px;color:var(--tinta2)}
+.reto .sello{position:absolute;top:-9px;right:-9px;width:30px;height:30px;border-radius:50%;background:#2f7d3a;color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid var(--tinta)}
+.reto .sello svg{width:17px;height:17px}
+.portada .como{margin:28px auto 0;max-width:760px;background:var(--blanco);border:2px solid var(--tinta);border-radius:14px;padding:12px 16px}
+.portada .como h2{margin:0 0 6px;font-size:22px;font-family:var(--fuente-nombre)}
+.portada .como p{margin:5px 0}
+/* ---- partida ---- */
+.cabecera{text-align:center;padding:10px 16px 4px;position:relative}
+.cabecera .volver{position:absolute;left:16px;top:12px}
+.cabecera .capitulo{font-size:15px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--acento2);padding:0 90px}
+.cabecera h1{font-family:var(--fuente-titulo);font-weight:700;font-size:clamp(30px,6vw,46px);margin:2px 0 0;line-height:1.05}
+main{display:grid;grid-template-columns:minmax(0,520px) minmax(0,400px);gap:28px;justify-content:center;padding:8px 16px 20px;align-items:start}
+@media (max-width:960px){main{grid-template-columns:minmax(0,520px)}}
+.marcador{text-align:center;font-size:18px;margin:2px 0 6px}
+.marcador b{font-size:22px}
+#tablero{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+#tablero .cas{cursor:pointer}
+#tablero .pieza{cursor:grab;transition:transform .22s ease}
+#tablero .pieza.arrastra{transition:none;cursor:grabbing}
+#tablero .pieza.fuera{opacity:0;transition:opacity .2s}
+.comidas{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;min-height:42px;margin:8px 0 2px}
+.comidas svg{width:38px;height:38px}
+.barra{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;margin:8px 0}
+.boton{border:2px solid var(--tinta);border-radius:12px;background:var(--blanco);padding:7px 10px;font-weight:700;font-size:16px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.boton:hover{filter:brightness(.96)}
+.boton:focus-visible{outline:3px solid var(--oro);outline-offset:2px}
+.boton.principal{background:var(--acento);color:#fff;border-color:var(--acento2)}
+.boton.icono{padding:7px 10px}
+.boton svg{width:18px;height:18px;flex:none}
+.boton:disabled{opacity:.45;cursor:default}
+.pista-caja{background:var(--blanco);border:2px solid var(--acento);border-radius:12px;padding:10px 12px;margin-top:8px;text-align:center}
+.cartas-tit{font-family:var(--fuente-nombre);font-size:24px;text-align:center;margin:4px 0 10px}
+.cartas{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.carta{background:var(--blanco);border:2px solid var(--tinta);border-radius:12px;padding:8px;display:flex;gap:8px;align-items:center}
+.carta svg{width:52px;height:52px;flex:none}
+.carta b.nom{font-family:var(--fuente-nombre);font-size:17px;display:block}
+.carta span{font-size:14.5px;line-height:1.2}
+.ajuste{display:flex;gap:8px;align-items:flex-start;margin:14px 2px 0;cursor:pointer;font-size:15.5px}
+.ajuste input{width:20px;height:20px;margin-top:1px;accent-color:var(--acento)}
+@media (max-width:600px){
+  .acciones{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .acciones .boton{justify-content:center;padding:8px 4px;font-size:15px}
+  .cabecera .capitulo{font-size:13px;padding:0}
+  .cabecera .volver{position:static;margin:0 auto 6px 0;display:flex}
+  .cartas{grid-template-columns:1fr}
+}
+#toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%) translateY(20px);background:var(--tinta);color:#fff;padding:10px 16px;border-radius:12px;
+  max-width:min(92vw,520px);font-size:16px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;text-align:center}
+#toast.ver{opacity:1;transform:translateX(-50%) translateY(0)}
+dialog{border:3px solid var(--tinta);border-radius:16px;background:var(--papel);color:var(--tinta);padding:0;max-width:min(94vw,600px);width:100%}
+dialog::backdrop{background:rgba(43,38,32,.45)}
+.dlg{padding:16px 18px 18px;max-height:86vh;overflow:auto}
+.dlg h2{font-family:var(--fuente-titulo);font-weight:700;font-size:30px;margin:0 0 6px;text-align:center;line-height:1.1}
+.dlg p{margin:6px 0}
+.dlg .pie{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.dlg .cartas{margin-top:10px}
+.resuelto{text-align:center}
+.resuelto .copa{width:96px;height:96px;margin:0 auto;color:var(--oro)}
+.pie-pagina{text-align:center;font-size:14px;color:var(--tinta2);padding:4px 16px 24px;max-width:760px;margin:0 auto}
+@media (prefers-reduced-motion:reduce){.reto:hover{transform:none}#tablero .pieza{transition:none}}
+
+</style>
+</head>
+<body>
+<section class="portada" id="portada">
+  <div class="marca">
+    <div class="corona" aria-hidden="true"></div>
+    <h1>Mini ajedrez</h1>
+    <p class="lema">Captura una pieza en cada jugada hasta que en el tablero quede <b>solo una</b>.</p>
+  </div>
+  <div id="niveles"></div>
+  <div class="como">
+    <h2>Cómo se juega</h2>
+    <p>• <b>Todas las jugadas son capturas</b>: una pieza se mueve como en el ajedrez y se come a otra. No se puede mover a una casilla vacía.</p>
+    <p>• Todas las piezas son del mismo equipo: cualquiera puede comerse a cualquiera… <b>menos al rey</b>, al que nunca se captura.</p>
+    <p>• Ganas cuando queda <b>una sola pieza</b>. Si te atascas, deshaz jugadas o empieza otra vez.</p>
+  </div>
+</section>
+<section id="partida" hidden>
+  <header class="cabecera">
+    <button class="boton volver" id="bVolver" aria-label="Volver a los retos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7l7 7"/></svg>Retos</button>
+    <div class="capitulo" id="capitulo"></div>
+    <h1 id="titulo"></h1>
+  </header>
+  <main>
+    <section class="izq">
+      <div class="marcador" id="marcador"></div>
+      <svg id="tablero" viewBox="0 0 440 440" role="img" aria-label="Tablero"></svg>
+      <div class="comidas" id="comidas" aria-label="Piezas capturadas"></div>
+      <div class="pista-caja" id="pistaCaja" aria-live="polite" hidden></div>
+      <div class="barra acciones">
+        <button class="boton" id="bDeshacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg>Deshacer</button>
+        <button class="boton" id="bReiniciar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v6h6"/><path d="M5 15a8 8 0 1 0 1-8l-2 3"/></svg>Reiniciar</button>
+        <button class="boton" id="bComprobar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>Comprobar</button>
+        <button class="boton" id="bPista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 00-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0012 3z"/></svg>Pista</button>
+        <button class="boton" id="bNormas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v14c-3-1-6-1-8 1-2-2-5-2-8-1z"/><path d="M12 6v14"/></svg>Normas</button>
+        <button class="boton icono" id="bSonido" aria-label="Sonido"></button>
+      </div>
+    </section>
+    <section class="der">
+      <h2 class="cartas-tit">Cómo captura cada pieza</h2>
+      <div class="cartas" id="cartas"></div>
+      <label class="ajuste"><input type="checkbox" id="oVer"> Señalar las capturas posibles al tocar una pieza</label>
+    </section>
+  </main>
+</section>
+<footer class="pie-pagina">Retos creados por ordenador; todos tienen solución comprobada. Basado en el clásico «solitario de ajedrez».</footer>
+<dialog id="dlg"><div class="dlg" id="dlgCuerpo"></div></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+// Mini ajedrez: motor de reglas (sirve al buscador y, copiado tal cual, al juego).
+// Tablero 4x4, casilla i = fila*4 + columna; fila 0 = arriba (fila «4»), fila 3 = abajo (fila «1»).
+// Cada movimiento captura; el rey nunca es capturado; el peón captura en diagonal hacia ARRIBA (fila-1).
+(function (raiz) {
+  const N = 4;
+  const DIR = {
+    R: [[1, 0], [-1, 0], [0, 1], [0, -1]],
+    B: [[1, 1], [1, -1], [-1, 1], [-1, -1]],
+  };
+  DIR.Q = DIR.R.concat(DIR.B);
+  const SALTO_N = [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]];
+  const PASO_K = DIR.Q;
+
+  const dentro = (f, c) => f >= 0 && f < N && c >= 0 && c < N;
+
+  // capturas posibles de la pieza en i: lista de casillas destino
+  function capturasDe(t, i) {
+    const p = t[i]; if (p === '.') return [];
+    const f = Math.floor(i / N), c = i % N, r = [];
+    const prueba = (ff, cc) => { if (dentro(ff, cc)) { const j = ff * N + cc; if (t[j] !== '.' && t[j] !== 'K') r.push(j); } };
+    if (p === 'Q' || p === 'R' || p === 'B') {
+      for (const [df, dc] of DIR[p]) {
+        let ff = f + df, cc = c + dc;
+        while (dentro(ff, cc) && t[ff * N + cc] === '.') { ff += df; cc += dc; }
+        prueba(ff, cc);
+      }
+    } else if (p === 'N') SALTO_N.forEach(([df, dc]) => prueba(f + df, c + dc));
+    else if (p === 'K') PASO_K.forEach(([df, dc]) => prueba(f + df, c + dc));
+    else if (p === 'P') { prueba(f - 1, c - 1); prueba(f - 1, c + 1); }
+    return r;
+  }
+
+  function movimientos(t) {
+    const m = [];
+    for (let i = 0; i < N * N; i++) for (const j of capturasDe(t, i)) m.push([i, j]);
+    return m;
+  }
+  function aplicar(t, [i, j]) { const u = t.slice(); u[j] = u[i]; u[i] = '.'; return u; }
+  const piezas = (t) => t.reduce((s, x) => s + (x !== '.'), 0);
+
+  // análisis completo con memoria: nº de soluciones (secuencias) y probabilidad de ganar jugando al azar
+  function analizar(t0) {
+    const memo = new Map();
+    let nodos = 0;
+    function rec(t) {
+      const k = t.join('');
+      if (memo.has(k)) return memo.get(k);
+      nodos++;
+      let res;
+      if (piezas(t) === 1) res = { sol: 1, p: 1 };
+      else {
+        const ms = movimientos(t);
+        if (!ms.length) res = { sol: 0, p: 0 };
+        else {
+          let sol = 0, p = 0;
+          for (const m of ms) { const r = rec(aplicar(t, m)); sol += r.sol; p += r.p; }
+          res = { sol, p: p / ms.length };
+        }
+      }
+      memo.set(k, res); return res;
+    }
+    const r = rec(t0);
+    return { soluciones: r.sol, prob: r.p, estados: nodos };
+  }
+
+  // la solución (si es única) como lista de movimientos
+  function resolver(t) {
+    if (piezas(t) === 1) return [];
+    for (const m of movimientos(t)) { const r = resolver(aplicar(t, m)); if (r) return [m].concat(r); }
+    return null;
+  }
+
+  const api = { N, capturasDe, movimientos, aplicar, piezas, analizar, resolver };
+  if (typeof module !== 'undefined') module.exports = api; else raiz.Motor = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+// Motor rápido para el afinador: mismo análisis que motor.analizar (soluciones y prob al azar), pero con el tablero
+// como enteros, clave numérica (3 bits por casilla: 48 bits, cabe exacto en un double) y movimientos precalculados.
+// Se comprueba contra motor.js con `node motor_rapido.js` (posiciones al azar).
+const COD = { '.': 0, K: 1, Q: 2, R: 3, B: 4, N: 5, P: 6 };
+const POT = []; for (let i = 0; i < 16; i++) POT.push(8 ** i);
+const dentro = (f, c) => f >= 0 && f < 4 && c >= 0 && c < 4;
+const RAYOS = { R: [], B: [] }, SALTOS = { N: [], K: [], P: [] };
+for (let i = 0; i < 16; i++) {
+  const f = Math.floor(i / 4), c = i % 4;
+  const rayos = (dirs) => dirs.map(([df, dc]) => { const r = []; let ff = f + df, cc = c + dc; while (dentro(ff, cc)) { r.push(ff * 4 + cc); ff += df; cc += dc; } return r; }).filter((r) => r.length);
+  RAYOS.R.push(rayos([[1, 0], [-1, 0], [0, 1], [0, -1]]));
+  RAYOS.B.push(rayos([[1, 1], [1, -1], [-1, 1], [-1, -1]]));
+  const saltos = (lst) => lst.filter(([df, dc]) => dentro(f + df, c + dc)).map(([df, dc]) => (f + df) * 4 + c + dc);
+  SALTOS.N.push(saltos([[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]]));
+  SALTOS.K.push(saltos([[1, 1], [1, 0], [1, -1], [0, 1], [0, -1], [-1, 1], [-1, 0], [-1, -1]]));
+  SALTOS.P.push(saltos([[-1, -1], [-1, 1]]));
+}
+const RQ = []; for (let i = 0; i < 16; i++) RQ.push(RAYOS.R[i].concat(RAYOS.B[i]));
+// lista de rayos y saltos por código de pieza
+const RAYS_DE = [null, null, RQ, RAYOS.R, RAYOS.B, null, null];
+const SALT_DE = [null, SALTOS.K, null, null, null, SALTOS.N, SALTOS.P];
+
+function movs(t, out) {
+  out.length = 0;
+  for (let i = 0; i < 16; i++) {
+    const p = t[i]; if (!p) continue;
+    const rs = RAYS_DE[p];
+    if (rs) { for (const r of rs[i]) for (const j of r) { if (t[j]) { if (t[j] !== 1) out.push(i * 16 + j); break; } } }
+    else for (const j of SALT_DE[p][i]) if (t[j] && t[j] !== 1) out.push(i * 16 + j);
+  }
+  return out;
+}
+
+function analizar(s) {
+  const t = new Int8Array(16); let clave = 0, n = 0;
+  for (let i = 0; i < 16; i++) { t[i] = COD[s[i]]; clave += t[i] * POT[i]; if (t[i]) n++; }
+  const memoP = new Map(), memoS = new Map();
+  const pilas = []; for (let k = 0; k <= 16; k++) pilas.push([]);
+  function rec(clave, n) {
+    if (n === 1) return 1;
+    const mp = memoP.get(clave); if (mp !== undefined) return mp;
+    const ms = movs(t, pilas[n]);
+    let p = 0, sol = 0;
+    if (ms.length) {
+      const lista = ms.slice();
+      for (const m of lista) {
+        const a = m >> 4, b = m & 15, pa = t[a], pb = t[b];
+        const c2 = clave - pa * POT[a] - pb * POT[b] + pa * POT[b];
+        t[b] = pa; t[a] = 0;
+        p += rec(c2, n - 1); sol += n - 1 === 1 ? 1 : memoS.get(c2);
+        t[a] = pa; t[b] = pb;
+      }
+      p /= lista.length;
+    }
+    memoP.set(clave, p); memoS.set(clave, sol);
+    return p;
+  }
+  const prob = rec(clave, n);
+  const soluciones = n === 1 ? 1 : memoS.get(clave);
+  // una solución (la primera), sacada de la memoria sin volver a buscar: [[de, a], ...] con casillas 0..15
+  let camino = null;
+  if (soluciones) {
+    camino = []; let c = clave, m = n;
+    while (m > 1) {
+      for (const mv of movs(t, []).slice()) {
+        const a = mv >> 4, b = mv & 15, pa = t[a], pb = t[b], c2 = c - pa * POT[a] - pb * POT[b] + pa * POT[b];
+        if (m - 1 === 1 || memoS.get(c2) > 0) { t[b] = pa; t[a] = 0; c = c2; m--; camino.push([a, b]); break; }
+      }
+    }
+  }
+  return { soluciones, prob, camino };
+}
+if (typeof module !== 'undefined') module.exports = { analizar }; else window.Rapido = { analizar };
+
+if (typeof require !== 'undefined' && require.main === module) {
+  const M = require('./motor');
+  const CAJA = 'KQRRBBNNPP';
+  let iguales = 0, total = 0, tl = 0, tr = 0;
+  for (let k = 3; k <= 9; k++) for (let n = 0; n < (k > 8 ? 20 : 60); n++) {
+    const p = CAJA.split('').sort(() => Math.random() - 0.5).slice(0, k), c = [...Array(16).keys()].sort(() => Math.random() - 0.5).slice(0, k);
+    const t = Array(16).fill('.'); c.forEach((x, i) => { t[x] = p[i]; });
+    let t0 = Date.now(); const a = M.analizar(t); tl += Date.now() - t0;
+    t0 = Date.now(); const b = analizar(t.join('')); tr += Date.now() - t0;
+    if (b.camino) { let u = t.slice(); for (const m of b.camino) { if (!M.capturasDe(u, m[0]).includes(m[1])) { console.log('CAMINO ILEGAL'); break; } u = M.aplicar(u, m); } if (M.piezas(u) !== 1) console.log('CAMINO NO GANA'); }
+    total++; if (a.soluciones === b.soluciones && Math.abs(a.prob - b.prob) < 1e-12) iguales++; else console.log('DISTINTO', t.join(''), a, b);
+  }
+  console.log(`${iguales}/${total} iguales · motor ${tl} ms · rápido ${tr} ms`);
+}
+
+</script>
+<script>
+// Siluetas planas de las piezas (viewBox 0 0 100 100), sin sombras, centradas.
+// Se pintan con currentColor; los «huecos» (ojo del caballo, corte del alfil) con var(--disco).
+window.PIEZAS_SVG = (function () {
+  const base = '<path d="M27 79h46a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H27a3 3 0 0 1-3-3v-5a3 3 0 0 1 3-3z"/>' +
+    '<path d="M32 80q0-9 8-11h20q8 2 8 11z"/>';
+  const collar = (y) => `<rect x="36" y="${y}" width="28" height="6" rx="3"/>`;
+  return {
+    P: base + '<circle cx="50" cy="31" r="13"/>' + collar(43) + '<path d="M43 48h14q0 12 8 21H35q8-9 8-21z"/>',
+    R: base + '<path d="M29 17h9v7h6v-7h12v7h6v-7h9v20H29z"/><path d="M36 37h28l-3 32H39z"/>',
+    B: base + '<circle cx="50" cy="11" r="5"/><path d="M50 16c11 9 15 21 10 33H40c-5-12-1-24 10-33z"/>' +
+      '<path d="M55 24l-9 13" style="stroke:var(--disco);fill:none" stroke-width="4" stroke-linecap="round"/>' + collar(48) +
+      '<path d="M42 54h16q0 9 7 15H35q7-6 7-15z"/>',
+    Q: base + '<circle cx="27" cy="21" r="4.5"/><circle cx="40" cy="16" r="4.5"/><circle cx="50" cy="13" r="4.5"/><circle cx="60" cy="16" r="4.5"/><circle cx="73" cy="21" r="4.5"/>' +
+      '<path d="M27 23l10 23 3-28 10 26 10-26 3 28 10-23-7 32H34z"/>' + collar(54) + '<path d="M40 60h20l2 9H38z"/>',
+    K: base + '<rect x="47" y="5" width="6" height="19" rx="1.5"/><rect x="41" y="10" width="18" height="6" rx="1.5"/>' +
+      '<path d="M33 31q17-12 34 0l-6 23H39z"/>' + collar(54) + '<path d="M40 60h20l2 9H38z"/>',
+    N: base + '<path d="M35 69c0-13 7-19 11-26-6 2-12 4-16 0-3-4 2-12 9-17 5-6 11-10 17-10l2-6 4 8c9 6 12 21 8 51z"/>' +
+      '<circle cx="47" cy="27" r="3" style="fill:var(--disco)"/>',
+  };
+})();
+window.NOMBRES = { K: 'rey', Q: 'reina', R: 'torre', B: 'alfil', N: 'caballo', P: 'peón' };
+
+</script>
+<script>window.RETOS = [{"id":"pri1","nivel":"Principiante","n":1,"t":"B..N.BP...N....P"},{"id":"pri2","nivel":"Principiante","n":2,"t":"...P.B..P.B..R.R"},{"id":"pri3","nivel":"Principiante","n":3,"t":"...P.N...B.RN.P."},{"id":"pri4","nivel":"Principiante","n":4,"t":"..N.N....QRBR..."},{"id":"pri5","nivel":"Principiante","n":5,"t":"...RQNK..B..N..."},{"id":"pri6","nivel":"Principiante","n":6,"t":"...PQNK..B..N..."},{"id":"pri7","nivel":"Principiante","n":7,"t":"B.RR..K..N.....N"},{"id":"pri8","nivel":"Principiante","n":8,"t":"...P.B..P.B..R.Q"},{"id":"pri9","nivel":"Principiante","n":9,"t":"...B..B...KRP..R"},{"id":"pri10","nivel":"Principiante","n":10,"t":"...B..B...KRN..R"},{"id":"int1","nivel":"Intermedio","n":1,"t":".RRB.NPN....P..."},{"id":"int2","nivel":"Intermedio","n":2,"t":".PR..NQN...BP..."},{"id":"int3","nivel":"Intermedio","n":3,"t":"...RBN..RQ...NB."},{"id":"int4","nivel":"Intermedio","n":4,"t":".R.QN.B.RB.....P"},{"id":"int5","nivel":"Intermedio","n":5,"t":"...PB...NQN..RR."},{"id":"int6","nivel":"Intermedio","n":6,"t":".B.RQ.B..K.RP..."},{"id":"int7","nivel":"Intermedio","n":7,"t":".Q.N.NB..K.PR..."},{"id":"int8","nivel":"Intermedio","n":8,"t":".R.P....RNN.QK.."},{"id":"int9","nivel":"Intermedio","n":9,"t":".N.RB..R..N...KQ"},{"id":"int10","nivel":"Intermedio","n":10,"t":".Q.N.NB..K.BR..."},{"id":"ava1","nivel":"Avanzado","n":1,"t":"...PPNN.RR...BB."},{"id":"ava2","nivel":"Avanzado","n":2,"t":"...PPNN.R...RBB."},{"id":"ava3","nivel":"Avanzado","n":3,"t":"P..R.NNR..B..BP."},{"id":"ava4","nivel":"Avanzado","n":4,"t":"...PB.N.PBN...RR"},{"id":"ava5","nivel":"Avanzado","n":5,"t":".NRB.BRPN...P..."},{"id":"ava6","nivel":"Avanzado","n":6,"t":".RBB..RN.KQ.P..."},{"id":"ava7","nivel":"Avanzado","n":7,"t":"...PP..QK..RBN.R"},{"id":"ava8","nivel":"Avanzado","n":8,"t":"...PN..K.BRP.NB."},{"id":"ava9","nivel":"Avanzado","n":9,"t":"...PKN..BR.B..NR"},{"id":"ava10","nivel":"Avanzado","n":10,"t":"...PRBK.N.B..R.Q"},{"id":"exp1","nivel":"Experto","n":1,"t":"B..RRNKNB.....PP"},{"id":"exp2","nivel":"Experto","n":2,"t":"..NNP..K.B.R.PBR"},{"id":"exp3","nivel":"Experto","n":3,"t":"..RBRPNNK.B.P..."},{"id":"exp4","nivel":"Experto","n":4,"t":".B.BP...N.NPR.KR"},{"id":"exp5","nivel":"Experto","n":5,"t":"P.BRN.RB...K.N.P"},{"id":"exp6","nivel":"Experto","n":6,"t":"..NPN.....RBPKBR"},{"id":"exp7","nivel":"Experto","n":7,"t":".P.B..RB..NKP.NR"},{"id":"exp8","nivel":"Experto","n":8,"t":"BRNRPNB...K...P."},{"id":"exp9","nivel":"Experto","n":9,"t":"...PN...RRKPBNB."},{"id":"exp10","nivel":"Experto","n":10,"t":".BN.RB..RN...PKP"}];</script>
+<script>
+(function () {
+  'use strict';
+  const M = window.Motor, A = (t) => window.Rapido.analizar(t.join('')), PZ = window.PIEZAS_SVG, NOM = window.NOMBRES, RETOS = window.RETOS;
+  const NIVELES = [
+    { id: 'Principiante', color: '#2f7d3a', oscuro: '#25642e', sub: 'Seis piezas y un solo camino bueno. Principiante… pero no fácil.' },
+    { id: 'Intermedio', color: '#2d6fae', oscuro: '#235a8f', sub: 'Siete piezas: piensa bien qué pieza debe quedar al final.' },
+    { id: 'Avanzado', color: '#c06a1a', oscuro: '#9c5410', sub: 'Ocho piezas. Casi todos los caminos acaban en un callejón sin salida.' },
+    { id: 'Experto', color: '#b8323a', oscuro: '#962730', sub: 'Nueve piezas y el rey bien rodeado. Solo para cabezas muy pacientes.' },
+  ];
+  const nivelDe = (id) => NIVELES.find((n) => n.id === id);
+  const ART = { K: 'el', Q: 'la', R: 'la', B: 'el', N: 'el', P: 'el' };
+  const nombreCas = (i) => 'abcd'[i % 4] + (4 - Math.floor(i / 4));
+  const laPieza = (p) => `${ART[p]} ${NOM[p]}`;
+
+  // ---------- guardado (puede fallar: modo privado, vista previa…) ----------
+  const CLAVE = 'mini-ajedrez-v1';
+  let datos = { resueltos: {}, partidas: {}, sonido: true, ver: true };
+  try { const d = JSON.parse(localStorage.getItem(CLAVE)); if (d) datos = Object.assign(datos, d); } catch (e) { /* sin guardado */ }
+  function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(datos)); } catch (e) { /* sin guardado */ } }
+
+  // ---------- avisos ----------
+  const toastEl = document.getElementById('toast');
+  let toastT = null;
+  function aviso(t, ms) { toastEl.textContent = t; toastEl.classList.add('ver'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('ver'), ms || 3400); }
+
+  // ---------- sonido (sintetizado, como en Crímenes de época) ----------
+  let actx = null;
+  function audio() { if (!actx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; actx = new AC(); } if (actx.state === 'suspended') actx.resume(); return actx; }
+  function tono(f, t0, dur, tipo, vol) {
+    const a = audio(); if (!a) return;
+    const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + t0;
+    o.type = tipo; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.03);
+  }
+  function ruido(t0, dur, fc, vol) {
+    const a = audio(); if (!a) return;
+    const n = Math.floor(a.sampleRate * dur), b = a.createBuffer(1, n, a.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const s = a.createBufferSource(), fi = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime + t0;
+    s.buffer = b; fi.type = 'bandpass'; fi.frequency.value = fc; fi.Q.value = 1.2; g.gain.value = vol;
+    s.connect(fi); fi.connect(g); g.connect(a.destination); s.start(t);
+  }
+  function trombon(f, t0, dur, vol, vibrato) {
+    const a = audio(); if (!a) return;
+    const o = a.createOscillator(), fi = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime + t0;
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t);
+    if (vibrato) {
+      const l = a.createOscillator(), lg = a.createGain();
+      l.frequency.value = 5.5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.03, t + dur * 0.4);
+      l.connect(lg); lg.connect(o.frequency); l.start(t); l.stop(t + dur + 0.05);
+      o.frequency.setTargetAtTime(f * 0.94, t + dur * 0.5, dur * 0.25);
+    }
+    fi.type = 'lowpass'; fi.Q.value = 5;
+    fi.frequency.setValueAtTime(f * 1.2, t); fi.frequency.linearRampToValueAtTime(f * 6, t + 0.1); fi.frequency.linearRampToValueAtTime(f * 2, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.03); g.gain.setValueAtTime(vol, t + dur * 0.75); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(fi); fi.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
+  }
+  const SONIDOS = {
+    elegir: () => tono(660, 0, 0.07, 'triangle', 0.1),
+    poner: () => { tono(262, 0, 0.16, 'triangle', 0.22); ruido(0, 0.05, 1400, 0.5); },
+    quitar: () => tono(392, 0, 0.09, 'triangle', 0.12),
+    no: () => { tono(196, 0, 0.16, 'triangle', 0.18); tono(147, 0.11, 0.22, 'triangle', 0.18); },
+    bien: () => [523, 659, 784].forEach((f, i) => tono(f, i * 0.09, 0.3, 'triangle', 0.16)),
+    pista: () => { tono(784, 0, 0.16, 'sine', 0.12); tono(1047, 0.1, 0.22, 'sine', 0.1); },
+    fanfarria: () => [[392, 0, 0.16], [392, 0.17, 0.08], [523, 0.27, 0.2], [659, 0.5, 0.2], [784, 0.74, 0.5], [659, 1.28, 0.14], [784, 1.44, 0.8]].forEach(([f, t, d]) => { tono(f, t, d, 'square', 0.05); tono(f / 2, t, d, 'triangle', 0.08); }),
+    wahwah: () => [[294, 0, 0.42], [277, 0.45, 0.42], [262, 0.9, 0.42], [247, 1.35, 1.1]].forEach(([f, t, d], n) => trombon(f, t, d, 0.07, n === 3)),
+  };
+  window.__sonidos = [];   // para el robot de pruebas
+  function sonar(n) { window.__sonidos.push(n); if (!datos.sonido) return; try { SONIDOS[n](); } catch (e) { /* sin audio */ } }
+  const bSonido = document.getElementById('bSonido');
+  const ICONO_SON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11"/></svg>';
+  const ICONO_MUDO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+  function pintarSonido() { bSonido.innerHTML = datos.sonido ? ICONO_SON : ICONO_MUDO; bSonido.setAttribute('aria-pressed', datos.sonido); bSonido.title = datos.sonido ? 'Sonido activado' : 'Sonido apagado'; }
+  bSonido.onclick = () => { datos.sonido = !datos.sonido; guardar(); pintarSonido(); if (datos.sonido) sonar('elegir'); };
+  pintarSonido();
+
+  // ---------- dibujos ----------
+  const svgPieza = (p, extra) => `<svg viewBox="0 0 100 100" ${extra || ''}><g fill="currentColor">${PZ[p]}</g></svg>`;
+  const disco = (p) => `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="var(--disco)" stroke="var(--tinta)" stroke-width="4"/><g fill="var(--tinta)" transform="translate(14 13) scale(.72)">${PZ[p]}</g></svg>`;
+  function miniTablero(t) {
+    let s = '<svg class="mini" viewBox="0 0 400 400" aria-hidden="true">';
+    for (let i = 0; i < 16; i++) {
+      const f = Math.floor(i / 4), c = i % 4;
+      s += `<rect x="${c * 100}" y="${f * 100}" width="100" height="100" fill="${(f + c) % 2 ? 'var(--oscura)' : 'var(--clara)'}"/>`;
+      if (t[i] !== '.') s += `<g fill="var(--tinta)" transform="translate(${c * 100 + 8} ${f * 100 + 6}) scale(.86)">${PZ[t[i]]}</g>`;
+    }
+    return s + '<rect x="2" y="2" width="396" height="396" rx="8" fill="none" stroke="var(--tinta)" stroke-width="5"/></svg>';
+  }
+  document.querySelector('.portada .corona').innerHTML = svgPieza('K');
+  const TEXTOS = {
+    K: 'Una casilla en cualquier dirección. Al rey <b>nunca</b> se le captura.',
+    Q: 'En línea recta o en diagonal, tan lejos como quiera, sin saltar piezas.',
+    R: 'En línea recta (horizontal o vertical), tan lejos como quiera, sin saltar.',
+    B: 'En diagonal, tan lejos como quiera, sin saltar piezas.',
+    N: 'En «L»: dos casillas en una dirección y una de lado. Es la única que salta.',
+    P: 'Una casilla en diagonal <b>hacia arriba</b>. No se corona.',
+  };
+  const cartasHTML = () => 'KQRBNP'.split('').map((p) => `<div class="carta">${disco(p)}<div><b class="nom">${NOM[p][0].toUpperCase() + NOM[p].slice(1)}</b><span>${TEXTOS[p]}</span></div></div>`).join('');
+  document.getElementById('cartas').innerHTML = cartasHTML();
+
+  // ---------- portada ----------
+  const ICONO_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
+  function pintarPortada() {
+    document.getElementById('niveles').innerHTML = NIVELES.map((nv) => {
+      const lista = RETOS.filter((r) => r.nivel === nv.id);
+      const hechos = lista.filter((r) => datos.resueltos[r.id]).length;
+      return `<section class="nivel-bloque"><h2 style="color:${nv.oscuro}">${nv.id}<span class="cuenta" style="background:${nv.color}">${hechos} / ${lista.length}</span></h2>
+        <p class="sub">${nv.sub}</p><div class="retos">${lista.map((r) => `<button class="reto" data-id="${r.id}" style="border-color:${nv.oscuro}" aria-label="${nv.id}, reto ${r.n}${datos.resueltos[r.id] ? ', resuelto' : ''}">
+        ${miniTablero(r.t)}<div class="fila"><span class="tit" style="color:${nv.oscuro}">Reto ${r.n}</span><span class="np">${M.piezas(r.t.split(''))} piezas</span></div>
+        ${datos.resueltos[r.id] ? `<span class="sello">${ICONO_OK}</span>` : ''}</button>`).join('')}</div></section>`;
+    }).join('');
+    document.querySelectorAll('.reto').forEach((b) => { b.onclick = () => abrir(b.dataset.id); });
+  }
+
+  // ---------- partida ----------
+  const tableroEl = document.getElementById('tablero');
+  const pistaCaja = document.getElementById('pistaCaja');
+  const oVer = document.getElementById('oVer');
+  oVer.checked = datos.ver; oVer.onchange = () => { datos.ver = oVer.checked; guardar(); dibujar(); };
+  let reto = null, hist = [], tab = null, sel = null, pistaNivel = 0, pistaMov = null, terminado = false;
+
+  function estadoActual() { let t = reto.t.split(''); for (const m of hist) t = M.aplicar(t, m); return t; }
+  function abrir(id) {
+    reto = RETOS.find((r) => r.id === id); if (!reto) return;
+    hist = (datos.partidas[id] || []).slice(); sel = null; pistaNivel = 0; pistaMov = null; terminado = false;
+    tab = estadoActual();
+    const nv = nivelDe(reto.nivel);
+    document.documentElement.style.setProperty('--acento', nv.color);
+    document.documentElement.style.setProperty('--acento2', nv.oscuro);
+    document.getElementById('capitulo').textContent = `${nv.id} · reto ${reto.n} de ${RETOS.filter((r) => r.nivel === reto.nivel).length}`;
+    document.getElementById('titulo').textContent = `Reto ${reto.n}`;
+    document.getElementById('portada').hidden = true; document.getElementById('partida').hidden = false;
+    pistaCaja.hidden = true;
+    try { history.replaceState(null, '', '#' + id); } catch (e) { /* nada */ }
+    window.scrollTo(0, 0);
+    dibujar();
+  }
+  function volver() {
+    document.getElementById('partida').hidden = true; document.getElementById('portada').hidden = false;
+    document.documentElement.style.removeProperty('--acento'); document.documentElement.style.removeProperty('--acento2');
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* nada */ }
+    reto = null; pintarPortada();
+  }
+  document.getElementById('bVolver').onclick = volver;
+
+  const X = (i) => 20 + (i % 4) * 100, Y = (i) => 20 + Math.floor(i / 4) * 100;
+  function dibujar() {
+    const objetivos = sel !== null && datos.ver ? M.capturasDe(tab, sel) : [];
+    let s = '<rect x="0" y="0" width="440" height="440" rx="16" fill="var(--marco)"/>';
+    for (let i = 0; i < 16; i++) {
+      const f = Math.floor(i / 4), c = i % 4;
+      s += `<rect class="cas" x="${X(i)}" y="${Y(i)}" width="100" height="100" fill="${(f + c) % 2 ? 'var(--oscura)' : 'var(--clara)'}"/>`;
+    }
+    for (let k = 0; k < 4; k++) {
+      s += `<text x="10" y="${76 + k * 100}" font-size="15" font-weight="700" fill="#fff6e3" text-anchor="middle" font-family="Alegreya,serif">${4 - k}</text>`;
+      s += `<text x="${70 + k * 100}" y="434" font-size="15" font-weight="700" fill="#fff6e3" text-anchor="middle" font-family="Alegreya,serif">${'abcd'[k]}</text>`;
+    }
+    if (pistaNivel >= 1 && pistaMov) s += `<rect x="${X(pistaMov[0]) + 3}" y="${Y(pistaMov[0]) + 3}" width="94" height="94" rx="10" fill="none" stroke="var(--oro)" stroke-width="6" stroke-dasharray="14 8"/>`;
+    if (sel !== null) s += `<rect x="${X(sel) + 3}" y="${Y(sel) + 3}" width="94" height="94" rx="10" fill="rgba(224,168,46,.28)" stroke="var(--oro)" stroke-width="6"/>`;
+    for (let i = 0; i < 16; i++) {
+      if (tab[i] === '.') continue;
+      s += `<g class="pieza" data-i="${i}" style="transform:translate(${X(i)}px,${Y(i)}px)"><circle cx="50" cy="50" r="42" fill="var(--disco)" stroke="var(--tinta)" stroke-width="3.5"/>` +
+        `<g fill="var(--tinta)" transform="translate(18 16) scale(.64)">${PZ[tab[i]]}</g></g>`;
+    }
+    for (const j of objetivos) s += `<circle cx="${X(j) + 50}" cy="${Y(j) + 50}" r="46" fill="none" stroke="var(--acento)" stroke-width="7" pointer-events="none"/>`;
+    if (pistaNivel >= 2 && pistaMov) {
+      const [a, b] = pistaMov, x1 = X(a) + 50, y1 = Y(a) + 50, x2 = X(b) + 50, y2 = Y(b) + 50, d = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / d, uy = (y2 - y1) / d;
+      const ex = x2 - ux * 30, ey = y2 - uy * 30;
+      s += `<g pointer-events="none" stroke="var(--oro)" fill="var(--oro)"><line x1="${x1 + ux * 30}" y1="${y1 + uy * 30}" x2="${ex - ux * 14}" y2="${ey - uy * 14}" stroke-width="10" stroke-linecap="round"/>` +
+        `<path d="M${ex} ${ey}L${ex - ux * 24 - uy * 15} ${ey - uy * 24 + ux * 15}L${ex - ux * 24 + uy * 15} ${ey - uy * 24 - ux * 15}Z" stroke-width="3" stroke-linejoin="round"/></g>`;
+    }
+    tableroEl.innerHTML = s;
+    const n = M.piezas(tab);
+    document.getElementById('marcador').innerHTML = n === 1 ? '<b>¡Solo queda una!</b>' : `Quedan <b>${n}</b> piezas · jugada ${hist.length + 1}`;
+    const inicial = reto.t.split('');
+    document.getElementById('comidas').innerHTML = hist.map(([, j], k) => { let t = inicial; for (let q = 0; q < k; q++) t = M.aplicar(t, hist[q]); return disco(t[j]); }).join('');
+    document.getElementById('bDeshacer').disabled = !hist.length;
+    document.getElementById('bReiniciar').disabled = !hist.length;
+  }
+
+  // por qué no vale una captura (para explicárselo a quien juega)
+  function porQueNo(a, b) {
+    const p = tab[a], q = tab[b];
+    if (q === '.') return 'Cada jugada tiene que capturar: no se puede mover a una casilla vacía.';
+    if (q === 'K') return 'Al rey no se le puede capturar.';
+    const df = Math.floor(b / 4) - Math.floor(a / 4), dc = b % 4 - a % 4;
+    const enLinea = df === 0 || dc === 0, enDiag = Math.abs(df) === Math.abs(dc);
+    const tapada = (p === 'Q' && (enLinea || enDiag)) || (p === 'R' && enLinea) || (p === 'B' && enDiag);
+    if (tapada) return `Hay una pieza en medio: ${laPieza(p)} no puede saltar.`;
+    return {
+      K: 'El rey solo captura en las casillas de al lado.',
+      Q: 'La reina captura en línea recta o en diagonal.',
+      R: 'La torre solo captura en línea recta (horizontal o vertical).',
+      B: 'El alfil solo captura en diagonal.',
+      N: 'El caballo captura en «L»: dos casillas en una dirección y una de lado.',
+      P: 'El peón solo captura una casilla en diagonal hacia arriba.',
+    }[p];
+  }
+
+  function jugar(a, b) {
+    if (terminado) return false;
+    if (!M.capturasDe(tab, a).includes(b)) { sonar('no'); aviso(porQueNo(a, b)); sel = null; dibujar(); return false; }
+    sel = null; pistaNivel = 0; pistaMov = null; pistaCaja.hidden = true;
+    const g = tableroEl.querySelector(`.pieza[data-i="${a}"]`), v = tableroEl.querySelector(`.pieza[data-i="${b}"]`);
+    hist.push([a, b]); datos.partidas[reto.id] = hist.slice(); guardar();
+    sonar('poner');
+    const sigue = () => { tab = estadoActual(); dibujar(); revisar(); };
+    if (g && v && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      g.classList.remove('arrastra'); tableroEl.appendChild(g);
+      v.classList.add('fuera'); requestAnimationFrame(() => { g.style.transform = `translate(${X(b)}px,${Y(b)}px)`; });
+      setTimeout(sigue, 240);
+    } else sigue();
+    return true;
+  }
+
+  function revisar() {
+    const n = M.piezas(tab);
+    if (n === 1) {
+      terminado = true; datos.resueltos[reto.id] = true; delete datos.partidas[reto.id]; guardar();
+      sonar('fanfarria'); setTimeout(ganado, 500);
+    } else if (!M.movimientos(tab).length) {
+      sonar('wahwah');
+      mostrarCaja('<b>Ya no se puede capturar nada</b> y quedan ' + n + ' piezas. Deshaz alguna jugada o empieza otra vez.', true);
+    }
+  }
+  function mostrarCaja(html, conBotones) {
+    pistaCaja.innerHTML = html + (conBotones ? '<div class="barra"><button class="boton" data-a="deshacer">Deshacer</button><button class="boton principal" data-a="reiniciar">Empezar otra vez</button></div>' : '');
+    pistaCaja.hidden = false;
+    pistaCaja.querySelectorAll('button[data-a]').forEach((b) => { b.onclick = () => (b.dataset.a === 'deshacer' ? deshacer() : reiniciar()); });
+  }
+
+  function siguienteReto() {
+    const i = RETOS.indexOf(reto);
+    for (let k = 1; k <= RETOS.length; k++) { const r = RETOS[(i + k) % RETOS.length]; if (!datos.resueltos[r.id]) return r; }
+    return RETOS[(i + 1) % RETOS.length];
+  }
+  function ganado() {
+    const sig = siguienteReto(), nv = nivelDe(reto.nivel);
+    const todos = RETOS.every((r) => datos.resueltos[r.id]);
+    abrirDialogo(`<div class="resuelto"><div class="copa">${svgPieza('K')}</div><h2>¡Has ganado!</h2>
+      <p>${nv.id}, reto ${reto.n}: ${hist.length} capturas y en el tablero queda solo ${laPieza(tab.find((x) => x !== '.'))}.</p>
+      ${todos ? '<p><b>¡Has superado todos los retos!</b></p>' : ''}
+      <div class="pie"><button class="boton" data-a="portada">Ver los retos</button><button class="boton principal" data-a="sig">Siguiente: ${sig.nivel}, reto ${sig.n}</button></div></div>`,
+    { portada: () => { cerrarDialogo(); volver(); }, sig: () => { cerrarDialogo(); abrir(sig.id); } });
+  }
+
+  function deshacer() {
+    if (!hist.length) return;
+    hist.pop(); datos.partidas[reto.id] = hist.slice(); guardar();
+    terminado = false; sel = null; pistaNivel = 0; pistaMov = null; pistaCaja.hidden = true;
+    tab = estadoActual(); sonar('quitar'); dibujar();
+  }
+  function reiniciar() {
+    hist = []; delete datos.partidas[reto.id]; guardar();
+    terminado = false; sel = null; pistaNivel = 0; pistaMov = null; pistaCaja.hidden = true;
+    tab = estadoActual(); sonar('quitar'); dibujar();
+  }
+  document.getElementById('bDeshacer').onclick = deshacer;
+  document.getElementById('bReiniciar').onclick = reiniciar;
+
+  // la mejor jugada: de las que llevan a ganar, la que deja más caminos buenos
+  function mejorJugada(t) {
+    let mejor = null, pm = -1;
+    for (const m of M.movimientos(t)) { const a = A(M.aplicar(t, m)); if (a.soluciones && a.prob > pm) { pm = a.prob; mejor = m; } }
+    return mejor;
+  }
+  // cuántas jugadas hay que deshacer para volver a un punto desde el que se puede ganar
+  function deshacerHastaBien() {
+    const ini = reto.t.split('');
+    for (let k = 1; k <= hist.length; k++) {
+      let t = ini; for (const m of hist.slice(0, hist.length - k)) t = M.aplicar(t, m);
+      if (A(t).soluciones) return k;
+    }
+    return hist.length;
+  }
+  document.getElementById('bComprobar').onclick = () => {
+    if (terminado) return;
+    if (A(tab).soluciones) { sonar('bien'); aviso(hist.length ? 'Vas bien: desde aquí todavía se puede ganar.' : 'Aún no has jugado: ¡todo es posible!'); }
+    else { sonar('no'); const k = deshacerHastaBien(); aviso(`Por aquí ya no se puede ganar. Deshaz ${k === 1 ? 'la última jugada' : k + ' jugadas'}.`, 4200); }
+  };
+  document.getElementById('bPista').onclick = () => {
+    if (terminado) return;
+    if (!A(tab).soluciones) {
+      const k = deshacerHastaBien(); sonar('pista');
+      pistaCaja.innerHTML = `Por aquí ya no se puede ganar. <b>Deshaz ${k === 1 ? 'la última jugada' : k + ' jugadas'}</b> para volver a un buen camino.<div class="barra"><button class="boton principal" id="bDeshK">Deshacer ${k === 1 ? '1 jugada' : k + ' jugadas'}</button></div>`;
+      pistaCaja.hidden = false;
+      document.getElementById('bDeshK').onclick = () => { for (let q = 0; q < k; q++) deshacer(); };
+      return;
+    }
+    if (!pistaMov) { pistaMov = mejorJugada(tab); pistaNivel = 0; }
+    pistaNivel = Math.min(2, pistaNivel + 1); sonar('pista'); sel = null;
+    const [a, b] = pistaMov;
+    pistaCaja.innerHTML = pistaNivel === 1
+      ? `<b>Pista:</b> mueve ${laPieza(tab[a])} de ${nombreCas(a)}. <br><small>¿Aún no lo ves? Pulsa «Pista» otra vez.</small>`
+      : `<b>Pista:</b> ${laPieza(tab[a])} de ${nombreCas(a)} captura ${laPieza(tab[b])} de ${nombreCas(b)}.`;
+    pistaCaja.hidden = false; dibujar();
+  };
+
+  // ---------- tocar y arrastrar ----------
+  function casillaDe(ev) {
+    const pt = tableroEl.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+    const p = pt.matrixTransform(tableroEl.getScreenCTM().inverse());
+    const c = Math.floor((p.x - 20) / 100), f = Math.floor((p.y - 20) / 100);
+    return { i: c >= 0 && c < 4 && f >= 0 && f < 4 ? f * 4 + c : -1, x: p.x, y: p.y };
+  }
+  let arr = null;   // arrastre en curso
+  tableroEl.addEventListener('pointerdown', (ev) => {
+    if (!reto || terminado) return;
+    const { i, x, y } = casillaDe(ev);
+    if (i < 0) return;
+    arr = { i, x0: x, y0: y, mov: false, g: tab[i] !== '.' ? tableroEl.querySelector(`.pieza[data-i="${i}"]`) : null };
+    try { tableroEl.setPointerCapture(ev.pointerId); } catch (e) { /* nada */ }
+  });
+  tableroEl.addEventListener('pointermove', (ev) => {
+    if (!arr || !arr.g) return;
+    const { x, y } = casillaDe(ev);
+    if (!arr.mov && Math.hypot(x - arr.x0, y - arr.y0) < 12) return;
+    if (!arr.mov) { arr.mov = true; arr.g.classList.add('arrastra'); tableroEl.appendChild(arr.g); if (sel !== arr.i) { sel = null; } }
+    arr.g.style.transform = `translate(${X(arr.i) + x - arr.x0}px,${Y(arr.i) + y - arr.y0}px)`;
+  });
+  tableroEl.addEventListener('pointerup', (ev) => {
+    if (!arr) return;
+    const a = arr; arr = null;
+    const { i } = casillaDe(ev);
+    if (a.mov) {
+      if (i >= 0 && i !== a.i) jugar(a.i, i);
+      else { a.g.classList.remove('arrastra'); a.g.style.transform = `translate(${X(a.i)}px,${Y(a.i)}px)`; }
+      return;
+    }
+    tocar(i);
+  });
+  tableroEl.addEventListener('pointercancel', () => { if (arr && arr.g) { arr.g.classList.remove('arrastra'); arr.g.style.transform = `translate(${X(arr.i)}px,${Y(arr.i)}px)`; } arr = null; });
+  function tocar(i) {
+    if (i < 0) return;
+    if (sel === null) {
+      if (tab[i] === '.') { aviso('Toca una pieza y después la pieza que quieres capturar.'); return; }
+      sel = i; sonar('elegir'); dibujar(); return;
+    }
+    if (i === sel) { sel = null; dibujar(); return; }
+    if (M.capturasDe(tab, sel).includes(i)) { jugar(sel, i); return; }
+    if (tab[i] === '.') { jugar(sel, i); return; }
+    // otra pieza que la elegida no puede capturar: pasa a ser la elegida (como en cualquier ajedrez de pantalla)
+    sel = i; sonar('elegir'); dibujar();
+  }
+
+  // ---------- diálogos ----------
+  const dlg = document.getElementById('dlg'), dlgCuerpo = document.getElementById('dlgCuerpo');
+  function abrirDialogo(html, acciones) {
+    dlgCuerpo.innerHTML = html;
+    dlgCuerpo.querySelectorAll('button[data-a]').forEach((b) => { b.onclick = acciones[b.dataset.a]; });
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  }
+  function cerrarDialogo() { if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); }
+  dlg.addEventListener('click', (ev) => { if (ev.target === dlg) cerrarDialogo(); });
+  document.getElementById('bNormas').onclick = () => abrirDialogo(`<h2>Normas</h2>
+    <p>• <b>Cada jugada es una captura:</b> una pieza se mueve como en el ajedrez y se come a otra. No vale moverse a una casilla vacía.</p>
+    <p>• Todas las piezas son del mismo equipo y cualquiera puede comerse a cualquiera, <b>menos al rey</b>: al rey nunca se le captura, así que, si hay rey, será la última pieza.</p>
+    <p>• Solo el caballo salta por encima de otras piezas. El peón captura en diagonal <b>hacia arriba</b>.</p>
+    <p>• <b>Ganas</b> cuando queda una sola pieza. Si te quedas sin capturas, deshaz o empieza otra vez.</p>
+    <p>• Para jugar, toca una pieza y luego la que quieres capturar, o arrástrala encima.</p>
+    <div class="cartas">${cartasHTML()}</div>
+    <div class="pie"><button class="boton principal" data-a="ok">Entendido</button></div>`, { ok: cerrarDialogo });
+
+  // ---------- arranque ----------
+  pintarPortada();
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h && RETOS.some((r) => r.id === h)) abrir(h);
+  window.__juego = { abrir, jugar, deshacer, reiniciar, volver, estado: () => tab && tab.join(''), reto: () => reto && reto.id, datos: () => datos };
+})();
+
+</script>
+</body>
+</html>
